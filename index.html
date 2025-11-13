@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SQL Master Cheat Sheet — DBMS Team, Newton School of Technology</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --card-border: rgba(99,102,241,1); /* indigo-500 fallback */
+    }
+    html,body { font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background-color: var(--bg,#f3f4f6); }
+    /* prefers color scheme */
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0b1220; --panel: #071022; --muted: #9aa4b2; --text: #e6eef6; --card-border: rgba(99,102,241,0.9); }
+      body { background-color: var(--bg); color: var(--text); }
+    }
+    /* custom scroll */
+    .scrollable::-webkit-scrollbar { height: 8px; width: 8px; }
+    .scrollable::-webkit-scrollbar-thumb { background: rgba(107,114,128,0.6); border-radius: 8px; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace; font-size: 0.85rem; padding: 0.12rem 0.35rem; border-radius: 6px; background: rgba(0,0,0,0.04); }
+    /* collapse animation */
+    .collapsible-enter { max-height: 0; transition: max-height .28s ease-out; overflow: hidden; }
+    .collapsible-enter-active { max-height: 2000px; }
+    /* small code box overflow */
+    code.snippet { display: block; white-space: pre-wrap; overflow-x: auto; max-height: 160px; }
+  </style>
+</head>
+<body class="min-h-screen py-8">
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <header class="bg-white/90 backdrop-blur-md dark:bg-slate-900/60 rounded-xl p-6 shadow-xl border-l-4 border-indigo-600 mb-6">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-slate-100">SQL Master Cheat Sheet <span class="text-indigo-600">—</span></h1>
+          <p class="mt-2 text-slate-600 dark:text-slate-300">Data concepts, commands, functions, patterns, and advanced topics — grouped for quick learning.</p>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Created by DBMS Team, Newton School of Technology</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          
+        </div>
+      </div>
+    </header>
+
+    <!-- Controls: Category selector (optional) + summary -->
+    <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+      <div class="md:col-span-2">
+        <select id="category-filter" class="w-full md:w-1/2 px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 focus:ring-2 focus:ring-indigo-400">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      <div class="text-sm text-slate-600 dark:text-slate-400 md:text-right">
+        <span id="totalCount" class="font-semibold text-slate-800 dark:text-slate-100">0</span> topics • <span id="categoryCount" class="text-slate-600 dark:text-slate-300">0</span> categories
+      </div>
+    </div>
+
+    <!-- Content: grouped categories -->
+    <main id="content" class="space-y-6">
+      <!-- Categories will be injected here -->
+    </main>
+
+    <!-- No results -->
+    <div id="noResults" class="hidden mt-8 p-6 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-500 rounded-lg">
+      <h3 class="text-lg font-semibold text-yellow-700 dark:text-yellow-200">No Concepts Found</h3>
+      <p class="text-yellow-700 dark:text-yellow-200 mt-1">Try different keywords or clear filters.</p>
+    </div>
+
+    <!-- Notification -->
+    <div id="toast" class="fixed left-1/2 bottom-8 transform -translate-x-1/2 px-6 py-3 rounded-full bg-green-600 text-white shadow-2xl opacity-0 pointer-events-none transition-opacity duration-300 z-50"></div>
+
+    <!-- Footer -->
+    <footer class="mt-10 text-center text-sm text-slate-600 dark:text-slate-400">
+      <div id="footerText">DBMS Team, Newton School of Technology <span id="year"></span></div>
+    </footer>
+  </div>
+
+  <script>
+    // ---------- Data: using the full dataset the user provided ----------
+    const sqlOneliners = [
+      { title: "Data", category: "Concept", description: "Raw, unorganized facts, figures, or information.", command: "", result: "A fundamental starting point." },
+      { title: "Data Type", category: "Concept", description: "Defines the kind of values a column can hold.", command: "INT, VARCHAR, DATE", result: "Ensures data consistency and integrity." },
+      { title: "Numeric Data Types", category: "Data Type", description: "Stores integer and decimal numbers.", command: "TINYINT, INT, BIGINT, FLOAT, DECIMAL", result: "Handles numerical data." },
+      { title: "String Data Types", category: "Data Type", description: "Stores text and character data.", command: "CHAR, VARCHAR, TEXT, ENUM, SET", result: "Handles textual data." },
+      { title: "Date & Time Data Types", category: "Data Type", description: "Stores date and time information.", command: "DATE, DATETIME, TIMESTAMP, TIME, YEAR", result: "Handles temporal data." },
+      { title: "Constraints", category: "Concept", description: "Rules enforced on columns to ensure data accuracy.", command: "NOT NULL, UNIQUE, PRIMARY KEY, FOREIGN KEY", result: "Guarantees valid and reliable data." },
+      { title: "Database", category: "Concept", description: "An organized collection of structured information.", command: "CREATE DATABASE mydatabase;", result: "The main container for data." },
+      { title: "DBMS", category: "Concept", description: "Software for defining, creating, and managing a database.", command: "", result: "MySQL, SQL Server, PostgreSQL, etc." },
+      { title: "Schema", category: "Concept", description: "The logical blueprint of a database's structure.", command: "CREATE TABLE students (id INT, ...)", result: "Defines tables, columns, and relationships." },
+      { title: "SQL", category: "Language", description: "Standard language for managing relational databases.", command: "SELECT * FROM table;", result: "The core communication method." },
+      { title: "MySQL", category: "RDBMS", description: "A popular open-source relational database management system.", command: "", result: "One type of DBMS." },
+      { title: "SQL Commands", category: "Concept", description: "Instructions to communicate with a database.", command: "SELECT, INSERT, UPDATE, DELETE", result: "Actions performed on the database." },
+
+      // DDL
+      { title: "DDL", category: "Command Type", description: "Data Definition Language. Defines database structure.", command: "CREATE, ALTER, DROP, TRUNCATE, RENAME", result: "Affects the structure (schema)." },
+      { title: "CREATE", category: "DDL", description: "Creates a new table, database, or other object.", command: "CREATE TABLE users (id INT, name VARCHAR(50));", result: "Table users is created." },
+      { title: "ALTER - Add Column", category: "DDL", description: "Adds a new column to an existing table.", command: "ALTER TABLE users ADD email VARCHAR(100);", result: "email column added to users." },
+      { title: "ALTER - Drop Column", category: "DDL", description: "Removes a column from a table.", command: "ALTER TABLE users DROP COLUMN email;", result: "email column removed." },
+      { title: "ALTER - Modify Column", category: "DDL", description: "Changes a column's data type or size.", command: "ALTER TABLE users MODIFY COLUMN name VARCHAR(100);", result: "name column size is changed." },
+      { title: "ALTER - Rename Column", category: "DDL", description: "Changes the name of a column (varies by DBMS).", command: "ALTER TABLE users CHANGE name full_name VARCHAR(50);", result: "name column is renamed to full_name." },
+      { title: "ALTER - Add Constraint", category: "DDL", description: "Adds a new constraint to a column or table.", command: "ALTER TABLE users ADD CONSTRAINT PK_users PRIMARY KEY (id);", result: "id column is set as primary key." },
+      { title: "DROP - Table", category: "DDL", description: "Deletes an entire table (structure and data).", command: "DROP TABLE users;", result: "Table users is permanently deleted." },
+      { title: "TRUNCATE", category: "DDL", description: "Deletes all rows from a table, but not the table structure.", command: "TRUNCATE TABLE users;", result: "All rows from users are instantly removed (non-logged)." },
+      { title: "RENAME", category: "DDL", description: "Renames a table or other database object.", command: "RENAME TABLE old_name TO new_name;", result: "Table old_name is renamed." },
+
+      // DML
+      { title: "DML", category: "Command Type", description: "Data Manipulation Language. Manages data within tables.", command: "INSERT, UPDATE, DELETE", result: "Affects the data (rows)." },
+      { title: "INSERT", category: "DML", description: "Adds new rows of data.", command: "INSERT INTO users (id, name) VALUES (1, 'John');", result: "1 row affected (new user added)." },
+      { title: "UPDATE", category: "DML", description: "Modifies existing records.", command: "UPDATE users SET name = 'Johnny' WHERE id = 1;", result: "1 row affected (name changed)." },
+      { title: "DELETE", category: "DML", description: "Deletes rows from a table.", command: "DELETE FROM users WHERE id = 1;", result: "1 row affected (user removed)." },
+
+      // DQL
+      { title: "DQL", category: "Command Type", description: "Data Query Language. Retrieves data.", command: "SELECT", result: "Returns a result set (table)." },
+      { title: "SELECT", category: "DQL", description: "Retrieves data from one or more tables.", command: "SELECT * FROM users;", result: "A table of all rows in users." },
+
+      // DCL
+      { title: "DCL", category: "Command Type", description: "Data Control Language. Manages user permissions.", command: "GRANT, REVOKE", result: "Affects security and access rights." },
+      { title: "GRANT", category: "DCL", description: "Gives a user specific privileges.", command: "GRANT SELECT ON users TO user1;", result: "User user1 can now select from users." },
+      { title: "REVOKE", category: "DCL", description: "Removes user privileges.", command: "REVOKE SELECT ON users FROM user1;", result: "User user1 can no longer select from users." },
+
+      // TCL
+      { title: "TCL", category: "Command Type", description: "Transaction Control Language. Manages database transactions.", command: "COMMIT, ROLLBACK, SAVEPOINT", result: "Ensures data reliability during changes." },
+      { title: "COMMIT", category: "TCL", description: "Permanently saves a transaction.", command: "COMMIT;", result: "Changes are saved to the database." },
+      { title: "ROLLBACK", category: "TCL", description: "Undoes changes made in a transaction since the last COMMIT or SAVEPOINT.", command: "ROLLBACK;", result: "Changes are undone." },
+      { title: "SAVEPOINT", category: "TCL", description: "Creates a point to which a transaction can revert.", command: "SAVEPOINT S1;", result: "A savepoint named S1 is created." },
+
+      // Clauses & Filtering
+      { title: "ORDER BY", category: "Clause", description: "Sorts the result set (DESC for descending, ASC for ascending).", command: "SELECT * FROM users ORDER BY name DESC;", result: "Rows are sorted by name in descending order." },
+      { title: "LIMIT", category: "Clause", description: "Constrains the number of rows returned.", command: "SELECT * FROM users LIMIT 10;", result: "Only the first 10 rows are returned." },
+      { title: "DISTINCT", category: "Keyword", description: "Returns only unique values in the specified column(s).", command: "SELECT DISTINCT city FROM users;", result: "A list of unique cities." },
+      { title: "OFFSET", category: "Clause", description: "Skips a specified number of rows before beginning to return rows.", command: "SELECT * FROM users LIMIT 10 OFFSET 20;", result: "Rows 21 to 30 are returned (used for pagination)." },
+      { title: "WHERE", category: "Clause", description: "Filters records based on a specified condition.", command: "SELECT * FROM users WHERE age > 25;", result: "Only rows where age is greater than 25." },
+      { title: "GROUP BY", category: "Clause", description: "Groups rows that have the same values into summary rows.", command: "SELECT city, COUNT(*) FROM users GROUP BY city;", result: "A count of users for each city." },
+      { title: "HAVING", category: "Clause", description: "Filters groups created by GROUP BY (similar to WHERE, but for groups).", command: "GROUP BY city HAVING COUNT(*) > 5;", result: "A count of users for cities with more than 5 users." },
+      { title: "CASE", category: "Statement", description: "A conditional expression for returning different values based on conditions.", command: "CASE WHEN age > 18 THEN 'Adult' ELSE 'Minor' END", result: "Returns 'Adult' or 'Minor' for each row." },
+
+      // Operators & Wildcards
+      { title: "Operators", category: "General", description: "Special keywords used for comparisons, logic, and calculations.", command: "+, AND, IN, LIKE", result: "Used in WHERE and HAVING clauses." },
+      { title: "Arithmetic Operators", category: "Operators", description: "Perform mathematical calculations.", command: "+, -, *, /, % (Modulo)", result: "5 + 3 results in 8." },
+      { title: "Comparison Operators", category: "Operators", description: "Compare two expressions and return a boolean (True/False).", command: "=, >, <, >=, <=, <> (or !=)", result: "10 > 5 results in True." },
+      { title: "Logical Operators", category: "Operators", description: "Combine or modify conditions.", command: "AND, OR, NOT", result: "(1>0 AND 2>1) results in True." },
+      { title: "Wildcards", category: "Concept", description: "Characters used with LIKE to search for patterns.", command: "LIKE 'A%', LIKE '_a%'", result: "John LIKE 'J%' results in True." },
+      { title: "Special Operators", category: "Operators", description: "Used for specific condition testing.", command: "IN, BETWEEN, LIKE, IS NULL, IS NOT NULL", result: "age IN (20, 30) returns rows with age 20 or 30." },
+
+      // Aggregate
+      { title: "Aggregate Functions", category: "Functions", description: "Perform a calculation on a set of values, returning a single value.", command: "COUNT(), SUM(), AVG(), MIN(), MAX()", result: "Used with GROUP BY." },
+      { title: "COUNT()", category: "Aggregate Functions", description: "Returns the number of rows that match a specified criterion.", command: "SELECT COUNT(CustomerID) FROM Customers;", result: "91 (number of customers)." },
+      { title: "SUM()", category: "Aggregate Functions", description: "Returns the total sum of a numeric column.", command: "SELECT SUM(Price) FROM Products;", result: "12500.5 (total price)." },
+      { title: "AVG()", category: "Aggregate Functions", description: "Returns the average value of a numeric column.", command: "SELECT AVG(Salary) FROM Employees;", result: "55000 (average salary)." },
+      { title: "MIN()", category: "Aggregate Functions", description: "Returns the minimum value of a column.", command: "SELECT MIN(Price) FROM Products;", result: "5.75 (lowest price)." },
+      { title: "MAX()", category: "Aggregate Functions", description: "Returns the maximum value of a column.", command: "SELECT MAX(Salary) FROM Employees;", result: "120000 (highest salary)." },
+
+      // String Functions
+      { title: "UPPER()", category: "String Functions", description: "Converts a string to uppercase.", command: "SELECT UPPER('hello world');", result: "HELLO WORLD" },
+      { title: "LOWER()", category: "String Functions", description: "Converts a string to lowercase.", command: "SELECT LOWER('HELLO WORLD');", result: "hello world" },
+      { title: "CONCAT()", category: "String Functions", description: "Joins two or more strings together.", command: "SELECT CONCAT('Hello', ' ', 'World');", result: "Hello World" },
+      { title: "SUBSTRING()", category: "String Functions", description: "Extracts a substring from a string.", command: "SELECT SUBSTRING('Database', 1, 4);", result: "Data" },
+      { title: "TRIM()", category: "String Functions", description: "Removes leading and/or trailing spaces from a string.", command: "SELECT TRIM(' SQL ');", result: "SQL" },
+      { title: "REPLACE()", category: "String Functions", description: "Replaces all occurrences of a substring.", command: "SELECT REPLACE('Hello SQL', 'SQL', 'World');", result: "Hello World" },
+
+      // Date & Time
+      { title: "NOW()", category: "Date & Time Functions", description: "Returns the current date and time (transaction-consistent).", command: "SELECT NOW();", result: "2025-09-16 15:37:47 (Example)" },
+      { title: "CURDATE()", category: "Date & Time Functions", description: "Returns the current date.", command: "SELECT CURDATE();", result: "2025-09-16 (Example)" },
+      { title: "YEAR()", category: "Date & Time Functions", description: "Extracts the year from a date.", command: "SELECT YEAR('2023-09-16');", result: "2023" },
+      { title: "DATEDIFF()", category: "Date & Time Functions", description: "Calculates the number of days between two dates.", command: "SELECT DATEDIFF('2023-10-16', '2023-09-16');", result: "30" },
+      { title: "DATE_ADD()", category: "Date & Time Functions", description: "Adds a time interval to a date.", command: "SELECT DATE_ADD('2023-09-16', INTERVAL 1 MONTH);", result: "2023-10-16" },
+      { title: "DATE_FORMAT()", category: "Date & Time Functions", description: "Formats a date value as a string.", command: "SELECT DATE_FORMAT('2023-09-16', '%M %d, %Y');", result: "September 16, 2023" },
+
+      // Null handling
+      { title: "IFNULL()", category: "Null Functions", description: "Returns the first expression if it's not NULL, otherwise returns the second.", command: "SELECT IFNULL(price, 0) FROM products;", result: "If price is NULL, returns 0." },
+      { title: "COALESCE()", category: "Null Functions", description: "Returns the first non-NULL expression in a list.", command: "SELECT COALESCE(price, sale_price, 0);", result: "Returns price, or sale_price, or 0." },
+
+      // Joins
+      { title: "INNER JOIN", category: "Joins", description: "Returns records that have matching values in both tables.", command: "SELECT * FROM Orders INNER JOIN Customers ON Orders.CustomerID = Customers.ID;", result: "Combined table with only matched rows." },
+      { title: "LEFT JOIN (or LEFT OUTER)", category: "Joins", description: "Returns all records from the left table, and the matched records from the right (NULL otherwise).", command: "SELECT * FROM Customers LEFT JOIN Orders ON Customers.ID = Orders.CustomerID;", result: "All customers, with their orders if they exist." },
+      { title: "RIGHT JOIN (or RIGHT OUTER)", category: "Joins", description: "Returns all records from the right table, and the matched records from the left (NULL otherwise).", command: "SELECT * FROM Orders RIGHT JOIN Customers ON Orders.CustomerID = Customers.ID;", result: "All orders, with their customer info if it exists." },
+      { title: "FULL OUTER JOIN", category: "Joins", description: "Returns all records when there is a match in either the left or the right table (combine LEFT and RIGHT JOINs with UNION).", command: "SELECT * FROM T1 FULL JOIN T2 ON T1.ID = T2.ID;", result: "All rows from both tables, with NULLs where there is no match." },
+      { title: "SELF JOIN", category: "Joins", description: "A regular join where a table is joined with itself (requires aliases).", command: "SELECT A.Name, B.Name AS Manager FROM Employees A JOIN Employees B ON A.ManagerID = B.ID;", result: "A list of employees and their managers." },
+
+      // Set operations
+      { title: "UNION", category: "Set Operations", description: "Combines the result sets of two or more SELECT statements and removes duplicate rows.", command: "SELECT City FROM C1 UNION SELECT City FROM C2;", result: "A list of unique cities from both result sets." },
+      { title: "UNION ALL", category: "Set Operations", description: "Combines the result sets of two or more SELECT statements and keeps ALL duplicates.", command: "SELECT City FROM C1 UNION ALL SELECT City FROM C2;", result: "A list of all cities from both result sets, including duplicates." },
+      { title: "INTERSECT", category: "Set Operations", description: "Returns only the rows that are present in both result sets.", command: "SELECT City FROM C1 INTERSECT SELECT City FROM C2;", result: "A list of cities common to both tables." },
+      { title: "EXCEPT (or MINUS)", category: "Set Operations", description: "Returns rows from the first query that are not in the second.", command: "SELECT City FROM C1 EXCEPT SELECT City FROM C2;", result: "A list of cities in C1 that are not in C2." },
+
+      // Subqueries & advanced
+      { title: "Sub-Queries (General)", category: "Advanced DQL", description: "A SELECT query nested inside another statement (SELECT, INSERT, UPDATE, DELETE).", command: "SELECT * FROM users WHERE id IN (SELECT user_id FROM orders);", result: "Returns users who have placed orders." },
+      { title: "Non-Correlated Subquery", category: "Subqueries", description: "Runs independently of the outer query; it executes once and passes its results to the outer query.", command: "SELECT name FROM employees WHERE salary = (SELECT MAX(salary) FROM employees);", result: "Returns the name of the highest-paid employee." },
+      { title: "Correlated Subquery", category: "Subqueries", description: "Depends on the outer query for its values; it executes once for *each row* of the outer query.", command: "SELECT name FROM employees E WHERE salary > (SELECT AVG(salary) FROM employees WHERE dept = E.dept);", result: "Employees who earn more than the average salary in their own department." },
+      { title: "EXISTS Keyword", category: "Subqueries", description: "Checks for the existence of *any* row returned by a subquery (returns TRUE/FALSE). Used primarily with correlated subqueries.", command: "SELECT name FROM Customers c WHERE EXISTS (SELECT * FROM Orders o WHERE o.cID = c.ID);", result: "Returns customers who have at least one order." },
+      { title: "NOT EXISTS Keyword", category: "Subqueries", description: "Checks if the subquery returns *no* rows.", command: "SELECT name FROM Customers c WHERE NOT EXISTS (SELECT * FROM Orders o WHERE o.cID = c.ID);", result: "Returns customers who have placed zero orders." },
+      { title: "Common Table Expressions (CTEs)", category: "Advanced DQL", description: "A temporary, named result set defined within the execution scope of a single SELECT, INSERT, UPDATE, or DELETE statement (start with WITH).", command: "WITH DeptAvg AS (SELECT dept, AVG(salary) AS AvgSal FROM Employees GROUP BY dept) SELECT E.name FROM Employees E JOIN DeptAvg DA ON E.dept = DA.dept WHERE E.salary > DA.AvgSal;", result: "Employees earning above their department's average." },
+      { title: "VIEWS", category: "DDL/DQL", description: "A virtual table based on the result-set of an SQL statement. The data is not physically stored.", command: "CREATE VIEW CustomerOrders AS SELECT C.Name, O.OrderDate FROM Customers C JOIN Orders O ON C.ID = O.CID;", result: "A simplified, reusable 'table' combining Customer and Order data." },
+
+      // Normalization
+      { title: "Database Normalization", category: "Normalization", description: "Process of structuring a database to reduce data redundancy and improve data integrity.", command: "", result: "Standard practice for robust database design." },
+      { title: "DBMS - 1NF", category: "Normalization", description: "First Normal Form: Each column must contain only atomic (indivisible) values, and there are no repeating groups.", command: "", result: "No multiple values in a single cell." },
+      { title: "DBMS - 2NF", category: "Normalization", description: "Second Normal Form: Must be in 1NF, and all non-key attributes must be fully dependent on the Primary Key.", command: "", result: "Eliminates partial dependency." },
+      { title: "DBMS - 3NF", category: "Normalization", description: "Third Normal Form: Must be in 2NF, and no non-key attribute is transitively dependent on the Primary Key.", command: "", result: "Eliminates transitive dependency." },
+      { title: "DBMS - BCNF", category: "Normalization", description: "Boyce-Codd Normal Form: A stricter version of 3NF. Every determinant must be a candidate key.", command: "", result: "Eliminates remaining anomalies not addressed by 3NF." },
+
+      // Transactions & ACID
+      { title: "Database Transactions", category: "Transactions", description: "A single logical unit of work, composed of one or more SQL statements.", command: "START TRANSACTION; -- ... ; COMMIT;", result: "Ensures all changes are either completed successfully or entirely undone." },
+      { title: "ACID Properties - Atomicity", category: "Transactions", description: "Requires that a transaction be treated as a single, indivisible unit. It must either fully complete (commit) or completely fail (rollback).", command: "", result: "All or nothing." },
+      { title: "ACID Properties - Consistency", category: "Transactions", description: "Ensures that a transaction only brings the database from one valid state to another, maintaining all data integrity rules (constraints).", command: "CHECK constraint validation", result: "Data is always valid before and after the transaction." },
+      { title: "ACID Properties - Isolation", category: "Transactions", description: "Guarantees that concurrent transactions execute independently and without interference from each other.", command: "SET TRANSACTION ISOLATION LEVEL READ COMMITTED;", result: "Ensures multiple users can work without errors." },
+      { title: "ACID Properties - Durability", category: "Transactions", description: "Ensures that once a transaction has been committed, it will remain permanent, even in the event of system failures (power loss, crashes).", command: "Durability is achieved by writing to non-volatile storage (WAL)", result: "Data persists permanently." },
+      { title: "Transaction Scheduling & Serializability", category: "Transactions", description: "The goal of concurrency control to ensure that the result of concurrent transactions is the same as if they were executed sequentially.", command: "", result: "Avoids concurrency issues like dirty reads, phantom reads, etc." },
+
+      // Conceptual & differences
+      { title: "CRUD", category: "General Concepts", description: "An acronym for the four basic functions: Create, Read, Update, Delete.", command: "Maps to INSERT, SELECT, UPDATE, DELETE.", result: "A fundamental concept of database interaction." },
+      { title: "Foreign Key", category: "General Concepts", description: "A column that links data in two tables, enforcing referential integrity.", command: "FOREIGN KEY (CustomerID) REFERENCES Customers(ID);", result: "Prevents orphaned records (Referential Integrity)." },
+      { title: "Primary Key vs. UNIQUE", category: "Differences", description: "PRIMARY KEY is unique and non-NULL. UNIQUE enforces uniqueness but allows one NULL value.", command: "PRIMARY KEY (id) vs. UNIQUE (email)", result: "A table can only have one primary key." },
+      { title: "TRUNCATE vs. DELETE", category: "Differences", description: "TRUNCATE is faster and non-logged (cannot be rolled back). DELETE is slower, logged, and can be rolled back.", command: "TRUNCATE TABLE users; -- vs -- DELETE FROM users;", result: "Choose based on performance and safety needs." },
+      { title: "HAVING vs. WHERE", category: "Differences", description: "WHERE filters rows *before* grouping; HAVING filters rows *after* grouping (on aggregated results).", command: "WHERE price > 10 -- vs -- HAVING SUM(price) > 100", result: "WHERE applies to individual rows; HAVING applies to groups." },
+      { title: "NOW() vs. SYSDATE()", category: "Differences", description: "NOW() returns the transaction start time (consistent); SYSDATE() returns the real-time, current system time.", command: "SELECT NOW(), SYSDATE();", result: "NOW() is consistent within a transaction." },
+      { title: "CHAR() vs. VARCHAR()", category: "Differences", description: "CHAR() has a fixed length (padded with spaces). VARCHAR() has a variable length.", command: "name CHAR(10) vs. name VARCHAR(10)", result: "VARCHAR saves space but is slightly slower." },
+    ];
+
+    // ---------- Helpers ----------
+    const groupBy = (arr, keyFn) => arr.reduce((acc, item) => {
+      const key = keyFn(item) || 'Uncategorized';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {});
+
+    // create category map
+    const categoriesMap = groupBy(sqlOneliners, i => i.category);
+
+    // Populate category filter select
+    const categorySelect = document.getElementById('category-filter');
+    const categories = Object.keys(categoriesMap).sort();
+    categories.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = `${cat} (${categoriesMap[cat].length})`;
+      categorySelect.appendChild(opt);
+    });
+
+    // Update counts
+    document.getElementById('categoryCount').textContent = categories.length;
+    document.getElementById('totalCount').textContent = sqlOneliners.length;
+
+    // Render Venn diagram SVG for Joins explanation
+    function joinVennSVG() {
+      return `
+        <div class="bg-gradient-to-r from-white/50 dark:from-slate-900/40 to-white/40 dark:to-slate-900/20 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
+          <h3 class="text-lg font-semibold mb-3 text-slate-800 dark:text-slate-100">Joins — Venn Diagram (visual)</h3>
+          <div class="flex flex-col md:flex-row items-center gap-4">
+            <div class="w-full md:w-1/2">
+              <svg viewBox="0 0 400 200" class="w-full h-auto">
+                <!-- Left circle -->
+                <defs>
+                  <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="1.2" result="blur"></feGaussianBlur>
+                  </filter>
+                </defs>
+                <g>
+                  <circle cx="140" cy="100" r="72" fill="rgba(99,102,241,0.18)"/>
+                  <circle cx="260" cy="100" r="72" fill="rgba(139,92,246,0.18)"/>
+                  <!-- overlap -->
+                  <ellipse cx="200" cy="100" rx="40" ry="62" fill="rgba(99,102,241,0.28)"/>
+                  <!-- labels -->
+                  <text x="86" y="40" fill="#334155" font-size="12" font-weight="600">Left Table</text>
+                  <text x="274" y="40" fill="#334155" font-size="12" font-weight="600">Right Table</text>
+
+                  <!-- sections labels -->
+                  <rect x="40" y="150" width="320" height="40" rx="6" fill="transparent" />
+                </g>
+              </svg>
+            </div>
+            <div class="w-full md:w-1/2 text-sm text-slate-700 dark:text-slate-300 space-y-2">
+              <div><span class="font-semibold">INNER JOIN:</span> only the overlapping area — rows present in both tables.</div>
+              <div><span class="font-semibold">LEFT JOIN:</span> left circle + overlap — all rows from left table; matched from right.</div>
+              <div><span class="font-semibold">RIGHT JOIN:</span> right circle + overlap — all rows from right table; matched from left.</div>
+              <div><span class="font-semibold">FULL OUTER JOIN:</span> entire area — rows from either table (use UNION in DBs that don't support FULL).</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Color mapping for category badges and borders
+    function categoryColorClass(cat) {
+      if (/DDL|Command Type/i.test(cat)) return 'border-red-500 bg-red-50 text-red-700';
+      if (/DML/i.test(cat)) return 'border-yellow-500 bg-yellow-50 text-yellow-800';
+      if (/DQL|Advanced|Subqueries/i.test(cat)) return 'border-green-500 bg-green-50 text-green-800';
+      if (/Function/i.test(cat)) return 'border-blue-500 bg-blue-50 text-blue-800';
+      if (/Join/i.test(cat)) return 'border-purple-500 bg-purple-50 text-purple-800';
+      if (/Transaction|Normalization/i.test(cat)) return 'border-pink-500 bg-pink-50 text-pink-800';
+      return 'border-indigo-500 bg-indigo-50 text-indigo-800';
+    }
+
+    // Copy to clipboard with navigator.clipboard fallback
+    function copyToClipboard(text, el) {
+      if (!text || text.trim() === '') {
+        showToast('No snippet to copy');
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('Command copied to clipboard');
+          pulseElement(el);
+        }).catch(() => {
+          fallbackCopy(text, el);
+        });
+      } else {
+        fallbackCopy(text, el);
+      }
+    }
+    function fallbackCopy(text, el) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('Command copied to clipboard');
+        pulseElement(el);
+      } catch (e) {
+        showToast('Copy failed');
+      }
+      document.body.removeChild(ta);
+    }
+    function pulseElement(el) {
+      if (!el) return;
+      el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }, { transform: 'scale(1)' }], { duration: 250 });
+    }
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('opacity-0');
+      t.classList.add('opacity-100');
+      t.style.pointerEvents = 'auto';
+      setTimeout(() => {
+        t.classList.remove('opacity-100');
+        t.classList.add('opacity-0');
+        t.style.pointerEvents = 'none';
+      }, 2000);
+    }
+
+    // Render categories grouped (collapsible)
+    const content = document.getElementById('content');
+
+    function renderCategories(filterCategory = '', searchTerm = '') {
+      content.innerHTML = '';
+      const term = (searchTerm || '').toLowerCase().trim();
+      const filteredCats = Object.keys(categoriesMap).filter(cat => {
+        if (!filterCategory) return true;
+        return cat === filterCategory;
+      }).sort();
+
+      let visibleCount = 0;
+
+      filteredCats.forEach(cat => {
+        // filter items inside category by search term
+        const items = categoriesMap[cat].filter(item => {
+          if (!term) return true;
+          return (
+            (item.title || '').toLowerCase().includes(term) ||
+            (item.description || '').toLowerCase().includes(term) ||
+            (item.command || '').toLowerCase().includes(term) ||
+            (item.result || '').toLowerCase().includes(term) ||
+            (item.category || '').toLowerCase().includes(term)
+          );
+        });
+
+        if (items.length === 0) return; // hide category if no matching items
+        visibleCount += items.length;
+
+        // category card
+        const wrapper = document.createElement('section');
+        wrapper.className = 'bg-white/90 dark:bg-slate-900/60 border rounded-xl p-4 shadow-sm';
+
+        // header
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between gap-4';
+        header.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold ${categoryColorClass(cat)}">${cat}</span>
+            <div>
+              <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100">${cat}</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">${items.length} topics</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button class="toggleBtn px-3 py-1 text-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/50">Collapse</button>
+          </div>
+        `;
+
+        // body (collapsible)
+        const body = document.createElement('div');
+        body.className = 'mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3';
+
+        // if this is the "Joins" category, prepend the Venn diagram full width
+        if (/Join/i.test(cat)) {
+          const vennWrap = document.createElement('div');
+          vennWrap.className = 'col-span-full';
+          vennWrap.innerHTML = joinVennSVG();
+          body.appendChild(vennWrap);
+        }
+
+        items.forEach(item => {
+          const card = document.createElement('article');
+          card.className = 'bg-white dark:bg-slate-800 rounded-xl p-4 shadow hover:shadow-lg transition duration-200 border-t-4';
+          // border color based on category
+          const borderClass = categoryColorClass(cat).includes('border-') ? categoryColorClass(cat) : 'border-indigo-500 bg-indigo-50 text-indigo-800';
+          // We'll set a top border color inline for consistent look:
+          card.style.borderTopWidth = '4px';
+          // choose color based on category mapping
+          let topColor = '#6366f1'; // indigo-500 default
+          if (/DDL|Command Type/i.test(cat)) topColor = '#ef4444';
+          if (/DML/i.test(cat)) topColor = '#f59e0b';
+          if (/DQL|Advanced|Subqueries/i.test(cat)) topColor = '#10b981';
+          if (/Function/i.test(cat)) topColor = '#3b82f6';
+          if (/Join/i.test(cat)) topColor = '#8b5cf6';
+          if (/Transaction|Normalization/i.test(cat)) topColor = '#ec4899';
+          card.style.borderTopColor = topColor;
+
+          // snippet: prefer .command, otherwise a helpful example derived from title
+          const snippet = (item.command && item.command.trim() !== '') ? item.command : `-- ${item.title} (no snippet provided)`;
+
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1">
+                <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100 mb-1">${item.title}</h3>
+                <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">${item.description}</p>
+                <div class="text-xs text-slate-500 dark:text-slate-400"><span class="font-semibold">Result:</span> ${item.result}</div>
+              </div>
+            </div>
+
+            <div class="mt-3 bg-gray-50 dark:bg-slate-900/60 border border-gray-100 dark:border-slate-700 rounded-lg p-3">
+              <pre class="snippet text-sm font-mono text-slate-800 dark:text-slate-100 whitespace-pre-wrap">${escapeHtml(snippet)}</pre>
+              <div class="mt-2 flex items-center justify-end gap-2">
+                <button class="copyBtn inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-indigo-600 text-white text-sm hover:bg-indigo-700" title="Copy snippet">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6M9 16h6M9 8h6M7 20h10a2 2 0 002-2V8a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                  Copy
+                </button>
+              </div>
+            </div>
+          `;
+          // attach copy handler
+          setTimeout(() => {
+            const btn = card.querySelector('.copyBtn');
+            btn.addEventListener('click', (e) => {
+              copyToClipboard(snippet, btn);
+            });
+          }, 0);
+
+          body.appendChild(card);
+        });
+
+        wrapper.appendChild(header);
+        wrapper.appendChild(body);
+        content.appendChild(wrapper);
+
+        // collapse toggle logic
+        const toggleBtn = header.querySelector('.toggleBtn');
+        toggleBtn.addEventListener('click', () => {
+          const isHidden = !Array.from(body.classList).includes('hidden');
+          if (isHidden) {
+            // hide
+            body.classList.add('hidden');
+            toggleBtn.textContent = 'Expand';
+          } else {
+            body.classList.remove('hidden');
+            toggleBtn.textContent = 'Collapse';
+          }
+        });
+      });
+
+      // No results?
+      const noResults = document.getElementById('noResults');
+      if (visibleCount === 0) {
+        noResults.classList.remove('hidden');
+      } else {
+        noResults.classList.add('hidden');
+      }
+    }
+
+    // initial render
+    renderCategories();
+
+    // ---------- Search & filter behaviors ----------
+    const searchInput = document.getElementById('search');
+    searchInput.addEventListener('input', () => {
+      const term = searchInput.value;
+      const cat = categorySelect.value;
+      renderCategories(cat, term);
+    });
+
+    categorySelect.addEventListener('change', () => {
+      const cat = categorySelect.value;
+      const term = searchInput.value;
+      renderCategories(cat, term);
+    });
+
+    // Reset button
+    document.getElementById('resetFilters').addEventListener('click', () => {
+      searchInput.value = '';
+      categorySelect.value = '';
+      renderCategories();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Utility: escape html for safe display in pre
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // dynamic year in footer
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // accessibility: focus styles on keyboard
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') document.body.classList.add('show-focus');
+    });
+
+    // Small improvement: allow clicking on the category badge in header to filter
+    // (delegation)
+    document.getElementById('content').addEventListener('click', (e) => {
+      const badge = e.target.closest('span.inline-block');
+      if (!badge) return;
+      const catText = badge.textContent || '';
+      // match category by exact name (case-insensitive)
+      const cat = Object.keys(categoriesMap).find(c => c.toUpperCase() === catText.trim().toUpperCase());
+      if (!cat) return;
+      categorySelect.value = cat;
+      renderCategories(cat, searchInput.value);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // make sure counts update when search applied
+    // observe content changes (lightweight)
+    const obs = new MutationObserver(() => {
+      // count visible topics quickly
+      const preCount = content.querySelectorAll('article').length;
+      document.getElementById('totalCount').textContent = preCount || sqlOneliners.length;
+    });
+    obs.observe(content, { childList: true, subtree: true });
+
+    // initial toast clear
+    setTimeout(() => {
+      const t = document.getElementById('toast');
+      t.classList.add('opacity-0');
+    }, 50);
+
+  </script>
+</body>
+</html>
